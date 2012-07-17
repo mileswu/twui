@@ -97,4 +97,44 @@
 	[[self handleForPasteboardDragView] endPasteboardDragging:operation];
 }
 
+- (BOOL)pasteboardReceiveDraggingEnabled
+{
+	return _viewFlags.pasteboardReceiveDraggingEnabled;
+}
+
+- (void)setPasteboardReceiveDraggingEnabled:(BOOL)e
+{
+	_viewFlags.pasteboardReceiveDraggingEnabled = e;
+}
+
+
+- (NSDragOperation)draggingEntered:(id <NSDraggingInfo>)sender
+{
+	// implemented by subclasses
+    return NSDragOperationNone;
+}
+
+- (NSDragOperation)draggingUpdated:(id < NSDraggingInfo >)sender
+{
+    // implemented by subclasses
+    return NSDragOperationNone;
+}
+
+- (void)draggingExited:(id < NSDraggingInfo >)sender
+{
+    // implemented by subclasses
+}
+
+- (BOOL)prepareForDragOperation:(id < NSDraggingInfo >)sender
+{
+    // implemented by subclasses
+    return NO;
+}
+
+- (BOOL)performDragOperation:(id < NSDraggingInfo >)sender
+{
+    // implemented by subclasses
+    return NO;
+}
+
 @end

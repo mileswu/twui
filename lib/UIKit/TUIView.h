@@ -113,6 +113,7 @@ extern CGRect(^TUIViewCenteredLayout)(TUIView*);
 		unsigned int didStartResizeByDragging:1;
 		unsigned int disableSubpixelTextRendering:1;
 		unsigned int pasteboardDraggingEnabled:1;
+		unsigned int pasteboardReceiveDraggingEnabled:1;
 		unsigned int pasteboardDraggingIsDragging:1;
 		unsigned int dragDistanceLock:1;
 		unsigned int clearsContextBeforeDrawing:1;

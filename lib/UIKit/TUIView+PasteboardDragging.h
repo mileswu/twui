@@ -29,4 +29,11 @@
 - (void)pasteboardDragMouseDown:(NSEvent *)event;
 - (void)pasteboardDragMouseDragged:(NSEvent *)event;
 
+@property (nonatomic, assign) BOOL pasteboardReceiveDraggingEnabled;
+- (NSDragOperation)draggingEntered:(id <NSDraggingInfo>)sender;
+- (NSDragOperation)draggingUpdated:(id < NSDraggingInfo >)sender;
+- (void)draggingExited:(id < NSDraggingInfo >)sender;
+- (BOOL)prepareForDragOperation:(id < NSDraggingInfo >)sender;
+- (BOOL)performDragOperation:(id < NSDraggingInfo >)sender;
+
 @end

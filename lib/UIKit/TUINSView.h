@@ -32,6 +32,8 @@
 	void(^_hyperCompletion)(BOOL);
 	
 	NSTrackingArea *_trackingArea;
+    
+    TUIView *_currentDragFocus;
 	
 	__unsafe_unretained TUITextRenderer *_tempTextRendererForTextInputClient; // weak, set temporarily while NSTextInputClient dicks around
 	

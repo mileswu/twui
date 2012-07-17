@@ -35,6 +35,8 @@
 {
 	if((self = [super initWithFrame:frameRect])) {
 		opaque = YES;
+        [self registerForDraggedTypes:[NSArray arrayWithObjects:NSTIFFPboardType, 
+                                       NSFilenamesPboardType, nil]];
 	}
 	return self;
 }
@@ -522,6 +524,90 @@
 	} while(v);
 	return nil;
 }
+
+/*
+ This implementation of dragging is not identical to standard AppKit dragging.
+ From my reading of the documentation, draggingEntered/Exited should be called on
+ all TUIViews that have the mouse location in its frame bounds (i.e. you can be 'entered'
+ on multiple views). However, here we choose to only give this notification to one view at
+ a time as a simplification. As a result draggingEnded is not needed (it is called on a view
+ that is entered when dragging finishes in another view, which for us cannot happen).
+*/
+
+- (NSDragOperation)draggingEntered:(id <NSDraggingInfo>)sender
+{
+    TUIView *view = [self viewForLocationInWindow:[sender draggingLocation]];
+    while(view) {
+        if([view pasteboardReceiveDraggingEnabled]) break;
+        view = [view superview];
+    }
+    if(view == NULL) {
+        return NSDragOperationNone;
+    }
+    else {
+        _currentDragFocus = view;
+        return [view draggingEntered:sender];
+    }    
+}
+
+- (NSDragOperation)draggingUpdated:(id < NSDraggingInfo >)sender
+{
+    TUIView *view = [self viewForLocationInWindow:[sender draggingLocation]];
+    while(view) {
+        if([view pasteboardReceiveDraggingEnabled]) break;
+        view = [view superview];
+    }
+    if(view == NULL) {
+        if(_currentDragFocus) {
+            [_currentDragFocus draggingExited:sender];
+            _currentDragFocus = NULL;
+        }
+        return NSDragOperationNone;
+    }
+    else {
+        if(_currentDragFocus != view) {
+            [_currentDragFocus draggingExited:sender];
+            _currentDragFocus = view;
+            return [view draggingEntered:sender];
+        }
+        else {
+            return [view draggingUpdated:sender];
+        }
+    }
+}
+
+- (void)draggingExited:(id < NSDraggingInfo >)sender
+{
+    if(_currentDragFocus) {
+        [_currentDragFocus draggingExited:sender];
+        _currentDragFocus = NULL;
+    }
+}
+
+- (BOOL)prepareForDragOperation:(id < NSDraggingInfo >)sender
+{
+    if(_currentDragFocus) {
+        return [_currentDragFocus prepareForDragOperation:sender];
+    }
+    else {
+        return NO;
+    }
+}
+
+- (BOOL)performDragOperation:(id < NSDraggingInfo >)sender
+{
+    if(_currentDragFocus) {
+        return [_currentDragFocus performDragOperation:sender];
+    }
+    else {
+        return NO;
+    }
+}
+
+
+
+
+
 
 #define ENABLE_NSTEXT_INPUT_CLIENT
 #import "TUINSView+NSTextInputClient.m"
