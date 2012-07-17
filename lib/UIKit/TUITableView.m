@@ -1224,6 +1224,95 @@ static NSInteger SortCells(TUITableViewCell *a, TUITableViewCell *b, void *ctx)
 	_tableFlags.maintainContentOffsetAfterReload = newValue;
 }
 
+- (NSDragOperation)draggingEntered:(id <NSDraggingInfo>)sender
+{
+    [self draggingUpdated:sender];
+    return NSDragOperationCopy;
+}
+
+- (NSDragOperation)draggingUpdated:(id < NSDraggingInfo >)sender
+{
+    CGPoint point = [self localPointForLocationInWindow:[sender draggingLocation]];
+    point.x = point.x - [self contentOffset].x;
+    point.y = point.y - [self contentOffset].y;
+
+    TUIFastIndexPath *fip = [self indexPathForRowAtPoint:point];
+    TUIFastIndexPath *lastfip = [self indexPathForLastVisibleRow];
+    if(!fip) {
+        fip = [TUIFastIndexPath indexPathForRow:([lastfip row]+1) inSection:[lastfip section]];
+    }
+    CGRect rowrect = [self rectForRowAtIndexPath:fip];
+
+    // begin animations
+    [TUIView beginAnimations:NSStringFromSelector(_cmd) context:NULL];
+    
+    // something about section headers TODO
+    
+    // update rows
+    [self enumerateIndexPathsFromIndexPath:[self indexPathForFirstVisibleRow] toIndexPath:[self indexPathForLastVisibleRow] withOptions:0 usingBlock:^(TUIFastIndexPath *indexPath, BOOL *stop) {
+        TUITableViewCell *displacedCell;
+        if((displacedCell = [self cellForRowAtIndexPath:indexPath]) != nil){
+            CGRect frame = [self rectForRowAtIndexPath:indexPath];
+            CGRect target;
+            
+            if([indexPath compare:fip] == NSOrderedDescending || [indexPath compare:fip] == NSOrderedSame) {
+                target = CGRectMake(frame.origin.x, frame.origin.y - 25, frame.size.width, frame.size.height);
+            }
+            else {
+                target = frame;
+            }
+            
+            // only animate if we actually need to
+            if(!CGRectEqualToRect(target, displacedCell.frame)){
+                displacedCell.frame = target;
+            }
+            
+        }
+    }];
+    
+    // commit animations
+    [TUIView commitAnimations];
+
+    return NSDragOperationCopy;
+}
+
+- (void)draggingExited:(id < NSDraggingInfo >)sender
+{
+    // begin animations
+    [TUIView beginAnimations:NSStringFromSelector(_cmd) context:NULL];
+    
+    // something about section headers TODO
+    
+    // reset all rows
+    [self enumerateIndexPathsFromIndexPath:[self indexPathForFirstVisibleRow] toIndexPath:[self indexPathForLastVisibleRow] withOptions:0 usingBlock:^(TUIFastIndexPath *indexPath, BOOL *stop) {
+        TUITableViewCell *displacedCell;
+        if((displacedCell = [self cellForRowAtIndexPath:indexPath]) != nil){
+            CGRect frame = [self rectForRowAtIndexPath:indexPath];
+
+            // only animate if we actually need to
+            if(!CGRectEqualToRect(frame, displacedCell.frame)){
+                displacedCell.frame = frame;
+            }
+        }
+    }];
+    
+    // commit animations
+    [TUIView commitAnimations];
+}
+
+- (BOOL)prepareForDragOperation:(id < NSDraggingInfo >)sender
+{
+    return YES;
+}
+
+- (BOOL)performDragOperation:(id < NSDraggingInfo >)sender
+{
+    /*    if(self.delegate != nil && [self.delegate respondsToSelector:@selector(tableViewWillReloadData:)]){
+     [self.delegate tableViewWillReloadData:self];
+     }*/
+    return YES;
+}
+
 @end
 
 
