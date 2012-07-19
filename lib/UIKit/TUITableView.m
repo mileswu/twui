@@ -1224,6 +1224,15 @@ static NSInteger SortCells(TUITableViewCell *a, TUITableViewCell *b, void *ctx)
 	_tableFlags.maintainContentOffsetAfterReload = newValue;
 }
 
+- (TUIFastIndexPath *)indexPathForRowAtWindowPoint:(NSPoint)point
+{
+    CGPoint cgpoint = [self localPointForLocationInWindow:point];
+    cgpoint.x = cgpoint.x - [self contentOffset].x;
+    cgpoint.y = cgpoint.y - [self contentOffset].y;
+    TUIFastIndexPath *fip = [self indexPathForRowAtPoint:cgpoint];
+    return fip;
+}
+
 - (NSDragOperation)draggingEntered:(id <NSDraggingInfo>)sender
 {
     [self draggingUpdated:sender];
@@ -1232,16 +1241,24 @@ static NSInteger SortCells(TUITableViewCell *a, TUITableViewCell *b, void *ctx)
 
 - (NSDragOperation)draggingUpdated:(id < NSDraggingInfo >)sender
 {
-    CGPoint point = [self localPointForLocationInWindow:[sender draggingLocation]];
-    point.x = point.x - [self contentOffset].x;
-    point.y = point.y - [self contentOffset].y;
-
-    TUIFastIndexPath *fip = [self indexPathForRowAtPoint:point];
+    TUIFastIndexPath *fip = [self indexPathForRowAtWindowPoint:[sender draggingLocation]];
     TUIFastIndexPath *lastfip = [self indexPathForLastVisibleRow];
     if(!fip) {
         fip = [TUIFastIndexPath indexPathForRow:([lastfip row]+1) inSection:[lastfip section]];
     }
-    CGRect rowrect = [self rectForRowAtIndexPath:fip];
+    
+    // validate
+    float gap = 5.0;
+    NSDragOperation retval;
+    if(self.delegate != nil && [self.delegate respondsToSelector:@selector(tableView:validateDrop:proposedPath:withGapHeight:)]) {
+        retval = [self.delegate tableView:self validateDrop:sender proposedPath:fip withGapHeight:&gap];
+    }
+    else if(self.delegate != nil && [self.delegate respondsToSelector:@selector(tableView:validateDrop:proposedPath:)]) {
+        retval = [self.delegate tableView:self validateDrop:sender proposedPath:fip];
+    }
+    else {
+        return NSDragOperationNone;
+    }
 
     // begin animations
     [TUIView beginAnimations:NSStringFromSelector(_cmd) context:NULL];
@@ -1256,7 +1273,7 @@ static NSInteger SortCells(TUITableViewCell *a, TUITableViewCell *b, void *ctx)
             CGRect target;
             
             if([indexPath compare:fip] == NSOrderedDescending || [indexPath compare:fip] == NSOrderedSame) {
-                target = CGRectMake(frame.origin.x, frame.origin.y - 25, frame.size.width, frame.size.height);
+                target = CGRectMake(frame.origin.x, frame.origin.y - gap, frame.size.width, frame.size.height);
             }
             else {
                 target = frame;
@@ -1273,7 +1290,7 @@ static NSInteger SortCells(TUITableViewCell *a, TUITableViewCell *b, void *ctx)
     // commit animations
     [TUIView commitAnimations];
 
-    return NSDragOperationCopy;
+    return retval;
 }
 
 - (void)draggingExited:(id < NSDraggingInfo >)sender
@@ -1307,11 +1324,26 @@ static NSInteger SortCells(TUITableViewCell *a, TUITableViewCell *b, void *ctx)
 
 - (BOOL)performDragOperation:(id < NSDraggingInfo >)sender
 {
-    /*    if(self.delegate != nil && [self.delegate respondsToSelector:@selector(tableViewWillReloadData:)]){
-     [self.delegate tableViewWillReloadData:self];
-     }*/
-    return YES;
+    TUIFastIndexPath *fip = [self indexPathForRowAtWindowPoint:[sender draggingLocation]];
+    BOOL retval;
+    
+    if(self.delegate != nil && [self.delegate respondsToSelector:@selector(tableView:acceptDrop:path:)]) {
+        retval = [self.delegate tableView:self acceptDrop:sender path:fip];
+    }
+    else {
+        retval = NO;
+    }
+    
+    if(retval) {
+        [self reloadData];
+    }
+    else {
+        [self draggingExited:sender];
+    }
 }
+
+/*- (NSDragOperation)tableView:(TUITableView *)aTableView validateDrop:(id < NSDraggingInfo >)info proposedPath:(TUIFastIndexPath *)path;
+- (NSDragOperation)tableView:(TUITableView *)aTableView validateDrop:(id < NSDraggingInfo >)info proposedPath:(TUIFastIndexPath *)path withGapHeight:(float *)height;*/
 
 @end
 
