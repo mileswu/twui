@@ -1235,8 +1235,7 @@ static NSInteger SortCells(TUITableViewCell *a, TUITableViewCell *b, void *ctx)
 
 - (NSDragOperation)draggingEntered:(id <NSDraggingInfo>)sender
 {
-    [self draggingUpdated:sender];
-    return NSDragOperationCopy;
+    return [self draggingUpdated:sender];
 }
 
 - (NSDragOperation)draggingUpdated:(id < NSDraggingInfo >)sender
@@ -1258,6 +1257,10 @@ static NSInteger SortCells(TUITableViewCell *a, TUITableViewCell *b, void *ctx)
     }
     else {
         return NSDragOperationNone;
+    }
+    
+    if(retval == NSDragOperationNone) {
+        gap = 0.0;
     }
 
     // begin animations
