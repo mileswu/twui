@@ -1343,6 +1343,7 @@ static NSInteger SortCells(TUITableViewCell *a, TUITableViewCell *b, void *ctx)
     else {
         [self draggingExited:sender];
     }
+    return retval;
 }
 
 /*- (NSDragOperation)tableView:(TUITableView *)aTableView validateDrop:(id < NSDraggingInfo >)info proposedPath:(TUIFastIndexPath *)path;
