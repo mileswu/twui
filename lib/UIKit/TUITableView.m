@@ -1240,9 +1240,13 @@ static NSInteger SortCells(TUITableViewCell *a, TUITableViewCell *b, void *ctx)
 
 - (NSDragOperation)draggingUpdated:(id < NSDraggingInfo >)sender
 {
+    //warning this logic occurs twice
     TUIFastIndexPath *fip = [self indexPathForRowAtWindowPoint:[sender draggingLocation]];
     TUIFastIndexPath *lastfip = [self indexPathForLastVisibleRow];
-    if(!fip) {
+    if(!fip & !lastfip) {
+        fip = [TUIFastIndexPath indexPathForRow:0 inSection:0];
+    }
+    else if(!fip) {
         fip = [TUIFastIndexPath indexPathForRow:([lastfip row]+1) inSection:[lastfip section]];
     }
     
@@ -1327,7 +1331,16 @@ static NSInteger SortCells(TUITableViewCell *a, TUITableViewCell *b, void *ctx)
 
 - (BOOL)performDragOperation:(id < NSDraggingInfo >)sender
 {
+    //warning this logic occurs twice
     TUIFastIndexPath *fip = [self indexPathForRowAtWindowPoint:[sender draggingLocation]];
+    TUIFastIndexPath *lastfip = [self indexPathForLastVisibleRow];
+    if(!fip & !lastfip) {
+        fip = [TUIFastIndexPath indexPathForRow:0 inSection:0];
+    }
+    else if(!fip) {
+        fip = [TUIFastIndexPath indexPathForRow:([lastfip row]+1) inSection:[lastfip section]];
+    }
+    
     BOOL retval;
     
     if(self.delegate != nil && [self.delegate respondsToSelector:@selector(tableView:acceptDrop:path:)]) {
