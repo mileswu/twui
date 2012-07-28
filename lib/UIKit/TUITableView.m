@@ -1238,10 +1238,9 @@ static NSInteger SortCells(TUITableViewCell *a, TUITableViewCell *b, void *ctx)
     return [self draggingUpdated:sender];
 }
 
-- (NSDragOperation)draggingUpdated:(id < NSDraggingInfo >)sender
+- (TUIFastIndexPath *)indexPathForDragLocation:(NSPoint)location
 {
-    //warning this logic occurs twice
-    TUIFastIndexPath *fip = [self indexPathForRowAtWindowPoint:[sender draggingLocation]];
+    TUIFastIndexPath *fip = [self indexPathForRowAtWindowPoint:location];
     TUIFastIndexPath *lastfip = [self indexPathForLastVisibleRow];
     if(!fip & !lastfip) {
         fip = [TUIFastIndexPath indexPathForRow:0 inSection:0];
@@ -1249,15 +1248,22 @@ static NSInteger SortCells(TUITableViewCell *a, TUITableViewCell *b, void *ctx)
     else if(!fip) {
         fip = [TUIFastIndexPath indexPathForRow:([lastfip row]+1) inSection:[lastfip section]];
     }
-    
+    return fip;
+}
+
+- (NSDragOperation)draggingUpdated:(id < NSDraggingInfo >)sender
+{
+    TUIFastIndexPath *fip = [self indexPathForDragLocation:[sender draggingLocation]];
+
     // validate
     float gap = 5.0;
     NSDragOperation retval;
-    if(self.delegate != nil && [self.delegate respondsToSelector:@selector(tableView:validateDrop:proposedPath:withGapHeight:)]) {
-        retval = [self.delegate tableView:self validateDrop:sender proposedPath:fip withGapHeight:&gap];
-    }
-    else if(self.delegate != nil && [self.delegate respondsToSelector:@selector(tableView:validateDrop:proposedPath:)]) {
-        retval = [self.delegate tableView:self validateDrop:sender proposedPath:fip];
+
+    if(self.dataSource != nil && [self.dataSource respondsToSelector:@selector(tableView:validateDrop:proposedPath:)]) {
+        retval = [self.dataSource tableView:self validateDrop:sender proposedPath:fip];
+        if(self.delegate != nil && [self.delegate respondsToSelector:@selector(tableView:heightForDropGapAtIndexPath:drop:)]) {
+            gap = [self.delegate tableView:self heightForDropGapAtIndexPath:fip drop: sender];
+        }
     }
     else {
         return NSDragOperationNone;
@@ -1331,20 +1337,12 @@ static NSInteger SortCells(TUITableViewCell *a, TUITableViewCell *b, void *ctx)
 
 - (BOOL)performDragOperation:(id < NSDraggingInfo >)sender
 {
-    //warning this logic occurs twice
-    TUIFastIndexPath *fip = [self indexPathForRowAtWindowPoint:[sender draggingLocation]];
-    TUIFastIndexPath *lastfip = [self indexPathForLastVisibleRow];
-    if(!fip & !lastfip) {
-        fip = [TUIFastIndexPath indexPathForRow:0 inSection:0];
-    }
-    else if(!fip) {
-        fip = [TUIFastIndexPath indexPathForRow:([lastfip row]+1) inSection:[lastfip section]];
-    }
+    TUIFastIndexPath *fip = [self indexPathForDragLocation:[sender draggingLocation]];
     
     BOOL retval;
     
-    if(self.delegate != nil && [self.delegate respondsToSelector:@selector(tableView:acceptDrop:path:)]) {
-        retval = [self.delegate tableView:self acceptDrop:sender path:fip];
+    if(self.dataSource != nil && [self.dataSource respondsToSelector:@selector(tableView:acceptDrop:path:)]) {
+        retval = [self.dataSource tableView:self acceptDrop:sender path:fip];
     }
     else {
         retval = NO;
